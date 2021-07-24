@@ -9,6 +9,20 @@ require("dotenv").config();
 
 const sequelize = new Sequelize('sqlite::memory:')
 
+const COOKIE_EXPIRY_DURATION = 60 * 60 * 3 * 1000; // 3 hours in milliseconds
+
+const Contact = sequelize.define('Contact', {
+    user: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    with: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+});
+Contact.sync();
+
 const User = sequelize.define('User', {
     email: {
         type: DataTypes.STRING,
@@ -32,7 +46,15 @@ const User = sequelize.define('User', {
     },
 });
 
-User.sync();
+User.sync().then(() => {
+    User.create({
+        email: "admin@msolidariti.org",
+        name: "Demo",
+        hash: bcrypt.hashSync("test", 10),
+        phoneNumber: "123",
+    });
+});
+
 
 function authUser(email, password, done) {
     User.findOne({
@@ -50,7 +72,10 @@ function authUser(email, password, done) {
 }
 
 function refreshVerification(user, done) {
-    const newVerification = bcrypt.hashSync(`${new Date().getTime()}-${user.hash}`, 5);
+    let newVerification = bcrypt.hashSync(`${new Date().getTime()}-${user.hash}`, 5).replace(/[^a-zA-Z0-9]+/g, "");
+    newVerification = newVerification.substr(0, newVerification.length / 2);
+    console.log(`Verification: ${newVerification}`)
+
     user.verification = newVerification;
     user.save().then(result => {
         done(result)
@@ -65,7 +90,7 @@ function createQRCode(email, done) {
         }
     }).then(user => {
         refreshVerification(user, result => {
-            const verifyURL = `${process.env.SERVER_API_URL}/verify/${result.verification}`;
+            const verifyURL = `${process.env.SERVER_API_URL}/verify/${encodeURIComponent(result.verification)}`;
             QRCode.toDataURL(verifyURL, { width: 300, height: 300 }, (err, url) => {
                 done(err, url);
             })
@@ -73,8 +98,19 @@ function createQRCode(email, done) {
     });
 }
 
-function checkVerification() {
-
+function checkVerification(id, done) {
+    User.findOne({
+        where: {
+            verification: decodeURIComponent(id),
+        }
+    }).then(user => {
+        if (user) {
+            console.log(user);
+            done(true, "User verified", user.id);
+        } else {
+            done(false, "No such verification");
+        }
+    });
 }
 
 function createUser(email, password, name, phoneNumber, done) {
@@ -99,6 +135,22 @@ function createUser(email, password, name, phoneNumber, done) {
     });
 }
 
+function addContact(userEmail, withUserID, done) {
+    User.findOne({ where: { email: userEmail } }).then(user => {
+        Contact.create({ user: user.id, with: withUserID })
+            .then(res => {
+                done(true, "Successfully added contact");
+            })
+            .catch(e => {
+                done(false, e);
+            });
+    })
+}
+
+function getCookieExpiry() {
+    return new Date(Date.now() + COOKIE_EXPIRY_DURATION);
+}
+
 const app = express();
 app.set('trust proxy', 1)
 app.use(session({
@@ -110,20 +162,26 @@ app.use(cors({ credentials: true, origin: process.env.WEBSITE_URL }))
 app.use(express.json())
 
 app.post('/login', (req, res) => {
-    const auth = authUser(req.body.email, req.body.password, (success, msg) => {
+    reqEmail = req.body.email.toLowerCase();
+    const auth = authUser(reqEmail, req.body.password, (success, msg) => {
         req.session.regenerate(() => {
-            req.session.user = req.body.email;
-            res.cookie("authorized", success, { domain: process.env.COOKIE_DOMAIN.split(","), sameSite: "none", secure: true });
+            cookieExpiry = getCookieExpiry();
+            req.session.cookie.expires = cookieExpiry;
+            req.session.user = reqEmail;
+            res.cookie("authorized", success, { domain: process.env.COOKIE_DOMAIN.split(","), sameSite: "none", secure: true, expires: cookieExpiry });
             res.send({ authorized: success, message: msg })
         });
     });
 });
 
 app.post('/create', (req, res) => {
-    if (!req.session.verified) {
-        createUser(req.body.email, req.body.password, req.body.name, req.body.phoneNumber, (success, msg) => {
-            req.session.user = req.body.email;
-            res.cookie("authorized", success, { domain: process.env.COOKIE_DOMAIN.split(","), sameSite: "none", secure: true });
+    reqEmail = req.body.email.toLowerCase();
+    if (req.session.verified) {
+        createUser(reqEmail, req.body.password, req.body.name, req.body.phoneNumber, (success, msg) => {
+            cookieExpiry = getCookieExpiry();
+            req.session.cookie.expires = cookieExpiry;
+            req.session.user = reqEmail;
+            res.cookie("authorized", success, { domain: process.env.COOKIE_DOMAIN.split(","), sameSite: "none", secure: true, expires: cookieExpiry });
             res.send({ success: success, message: msg });
         });
     } else {
@@ -143,10 +201,30 @@ app.get('/code', (req, res) => {
 })
 
 app.get("/verify/:id", (req, res) => {
-    checkVerification(req.params.id, (success, msg) => {
+    checkVerification(req.params.id, (success, msg, withUser) => {
+        cookieExpiry = getCookieExpiry();
+        req.session.cookie.expires = cookieExpiry;
         req.session.verified = success;
+
         if (success) {
-            res.redirect(`${process.env.WEBSITE_URL}/#/create`)
+            if (req.session.user) { // If Logged In
+                addContact(req.session.user, withUser, (success, msg) => {
+                    if (success) {
+                        res.redirect(`${process.env.WEBSITE_URL}/#/success`)
+                    } else {
+                        res.status(400).send(msg);
+                    }
+                });
+            } else { // If Not Logged In
+                res.cookie("verified", success, { domain: process.env.COOKIE_DOMAIN.split(","), sameSite: "none", secure: true, expires: cookieExpiry });
+                if (success) {
+                    res.redirect(`${process.env.WEBSITE_URL}/#/create`)
+                } else {
+                    res.status(400).send(msg);
+                }
+            }
+        } else {
+            res.status(400).send(msg);
         }
     });
 });
