@@ -182,7 +182,13 @@ app.post('/create', (req, res) => {
             req.session.cookie.expires = cookieExpiry;
             req.session.user = reqEmail;
             res.cookie("authorized", success, { domain: process.env.COOKIE_DOMAIN.split(","), sameSite: "none", secure: true, expires: cookieExpiry });
-            res.send({ success: success, message: msg });
+            if(success){
+                addContact(req.session.user, req.session.verifiedBy, (sucesss, msg)=>{
+                    res.send({ success: success, message: msg });    
+                });
+            }else{
+                res.send({ success: success, message: msg });
+            }
         });
     } else {
         res.status(401).send("Not verified");
@@ -190,7 +196,6 @@ app.post('/create', (req, res) => {
 })
 
 app.get('/code', (req, res) => {
-    console.log(req.session)
     if (!req.session.user) {
         res.status(401).send("Not logged in");
         return;
@@ -201,14 +206,15 @@ app.get('/code', (req, res) => {
 })
 
 app.get("/verify/:id", (req, res) => {
-    checkVerification(req.params.id, (success, msg, withUser) => {
+    checkVerification(req.params.id, (success, msg, withUserID) => {
         cookieExpiry = getCookieExpiry();
         req.session.cookie.expires = cookieExpiry;
         req.session.verified = success;
+        req.session.verifiedBy = withUserID;
 
         if (success) {
             if (req.session.user) { // If Logged In
-                addContact(req.session.user, withUser, (success, msg) => {
+                addContact(req.session.user, withUserID, (success, msg) => {
                     if (success) {
                         res.redirect(`${process.env.WEBSITE_URL}/#/success`)
                     } else {
