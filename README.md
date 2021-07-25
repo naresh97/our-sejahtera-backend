@@ -8,7 +8,7 @@ This is the backend API provider for the [SSR Tracing Web-App](https://github.co
 
 ### Building
 - Run `npm install` to install the required packages
-- Run `nodejs ./index.js` to start the server
+- Run `nodejs ./app.js` to start the server
 
 ### .env
 Server parameters are specified in the *.env* file, see *.env.template* for an example
