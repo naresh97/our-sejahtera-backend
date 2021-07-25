@@ -182,11 +182,11 @@ app.post('/create', (req, res) => {
             req.session.cookie.expires = cookieExpiry;
             req.session.user = reqEmail;
             res.cookie("authorized", success, { domain: process.env.COOKIE_DOMAIN.split(","), sameSite: "none", secure: true, expires: cookieExpiry });
-            if(success){
-                addContact(req.session.user, req.session.verifiedBy, (sucesss, msg)=>{
-                    res.send({ success: success, message: msg });    
+            if (success) {
+                addContact(req.session.user, req.session.verifiedBy, (sucesss, msg) => {
+                    res.send({ success: success, message: msg });
                 });
-            }else{
+            } else {
                 res.send({ success: success, message: msg });
             }
         });
@@ -235,7 +235,7 @@ app.get("/verify/:id", (req, res) => {
     });
 });
 
-const port = process.env.SERVER_PORT;
+const port = process.env.PORT || 8080;
 
 app.listen(port, () => {
     console.log(`Listening on port ${port}`);
