@@ -29,7 +29,7 @@ const sequelize = (() => {
 
 const storeDB = (() => {
     if (isProduction) {
-        new Sequelize(process.env.DB_STORE_NAME, process.env.DB_USER, process.env.DB_PASS, {
+        return new Sequelize(process.env.DB_STORE_NAME, process.env.DB_USER, process.env.DB_PASS, {
             host: process.env.DB_PATH,
             dialect: process.env.DB_DATA_DIALECT,
         });
@@ -184,10 +184,15 @@ function getCookieExpiry() {
 }
 
 const app = express();
+app.set('trust proxy', 1)
 app.use(session({
     secret: process.env.SERVER_SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    cookie: {
+        secure: true,
+        sameSite: "none",
+    }
 }))
 app.use(cors({ credentials: true, origin: true, secure: true }));
 app.use(express.json())
