@@ -3,6 +3,7 @@ const { Sequelize, DataTypes, STRING } = require('sequelize');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
 const QRCode = require('qrcode');
+const cors = require('cors');
 const { createSecureServer } = require('http2');
 require("dotenv-flow").config();
 
@@ -188,6 +189,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
 }))
+app.use(cors({ credentials: true, origin: true, secure: true }));
 app.use(express.json())
 
 app.post('/login', (req, res) => {
