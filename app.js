@@ -123,7 +123,7 @@ function createQRCode(email, done) {
         }
     }).then(user => {
         refreshVerification(user, result => {
-            const verifyURL = `${process.env.SERVER_API_URL}/verify/${encodeURIComponent(result.verification)}`;
+            const verifyURL = `${process.env.WEBSITE_URL}/#/verify/${encodeURIComponent(result.verification)}`;
             QRCode.toDataURL(verifyURL, { width: 300, height: 300 }, (err, url) => {
                 done(err, url);
             })
@@ -192,7 +192,8 @@ app.use(session({
     cookie: {
         secure: true,
         sameSite: "none",
-    }
+    },
+    store: store,
 }))
 app.use(cors({ credentials: true, origin: true, secure: true }));
 app.use(express.json())
@@ -241,8 +242,8 @@ app.get('/code', (req, res) => {
     });
 })
 
-app.get("/verify/:id", (req, res) => {
-    checkVerification(req.params.id, (success, msg, withUserID) => {
+app.post("/verify", (req, res) => {
+    checkVerification(req.body.id, (success, msg, withUserID) => {
         cookieExpiry = getCookieExpiry();
         req.session.verified = success;
         req.session.verifiedBy = withUserID;
@@ -250,21 +251,13 @@ app.get("/verify/:id", (req, res) => {
         if (success) {
             if (req.session.user) { // If Logged In
                 addContact(req.session.user, withUserID, (success, msg) => {
-                    if (success) {
-                        res.redirect(`${process.env.WEBSITE_URL}/#/success`)
-                    } else {
-                        res.status(400).send(msg);
-                    }
+                    res.status(success ? 200 : 400).send({ success: success, message: msg, loggedIn: true });
                 });
             } else { // If Not Logged In
-                if (success) {
-                    res.redirect(`${process.env.WEBSITE_URL}/#/create`)
-                } else {
-                    res.status(400).send(msg);
-                }
+                res.send({ success: success, message: msg, loggedIn: false })
             }
         } else {
-            res.status(400).send(msg);
+            res.status(400).send({ success: success, message: msg });
         }
     });
 });
