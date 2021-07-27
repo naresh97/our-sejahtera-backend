@@ -71,13 +71,13 @@ const User = sequelize.define('User', {
 });
 
 User.sync().then(() => {
-    if(process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD){
-    User.create({
+    if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD) {
+        User.create({
             telegram: process.env.ADMIN_USERNAME,
             hash: bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10),
-    }).catch(e => {
+        }).catch(e => {
             console.log("Couldn't create admin account. Probably exists.");
-    });
+        });
     }
 });
 
@@ -109,17 +109,21 @@ function refreshVerification(user, done) {
 function createQRCode(telegram, done) {
 
     User.findOne({
-        where: {
-            telegram: telegram
-        }
-    }).then(user => {
-        refreshVerification(user, result => {
-            const verifyURL = `${process.env.WEBSITE_URL}/#/verify/${encodeURIComponent(result.verification)}`;
-            QRCode.toDataURL(verifyURL, { width: 300, height: 300 }, (err, url) => {
-                done(err, url);
-            })
+            where: {
+                telegram: telegram
+            }
+        })
+        .then(user => {
+            refreshVerification(user, result => {
+                const verifyURL = `${process.env.WEBSITE_URL}/#/verify/${encodeURIComponent(result.verification)}`;
+                QRCode.toDataURL(verifyURL, { width: 300, height: 300 }, (err, url) => {
+                    done(err, url);
+                })
+            });
+        })
+        .catch(err => {
+            done(err);
         });
-    });
 }
 
 function checkVerification(id, done) {
@@ -227,7 +231,7 @@ app.get('/code', (req, res) => {
         return;
     }
     createQRCode(req.session.user, (err, url) => {
-        res.send({ error: err, data: url });
+        res.status(url ? 200 : 401).send({ error: err, data: url });
     });
 })
 
