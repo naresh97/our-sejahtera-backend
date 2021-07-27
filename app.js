@@ -195,10 +195,18 @@ app.post('/login', (req, res) => {
     reqTelegram = req.body.telegram.toLowerCase();
     const auth = authUser(reqTelegram, req.body.password, (success, msg) => {
         if (success) {
+            const verified = req.session.verified;
+            const verifiedBy = req.session.verifiedBy;
             req.session.regenerate(() => {
                 cookieExpiry = getCookieExpiry();
                 req.session.user = reqTelegram;
-                res.send({ authorized: success, message: msg })
+                if (verified) {
+                    addContact(reqTelegram, verifiedBy, (contactSuccess) => {
+                        res.send({ authorized: success, message: msg, contactSuccess: contactSuccess });
+                    });
+                } else {
+                    res.send({ authorized: success, message: msg });
+                }
             });
         } else {
             res.status(401).send({ authorized: success, message: msg });
