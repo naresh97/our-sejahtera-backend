@@ -71,12 +71,12 @@ const User = sequelize.define('User', {
 });
 
 User.sync().then(() => {
-    if(!isProduction){
+    if(process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD){
     User.create({
-            telegram: "admin",
-        hash: bcrypt.hashSync("test", 10),
+            telegram: process.env.ADMIN_USERNAME,
+            hash: bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10),
     }).catch(e => {
-        console.log("Couldn't create demo account. Probably exists.");
+            console.log("Couldn't create admin account. Probably exists.");
     });
     }
 });
