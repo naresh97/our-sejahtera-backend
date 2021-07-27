@@ -57,44 +57,35 @@ const Contact = sequelize.define('Contact', {
 Contact.sync();
 
 const User = sequelize.define('User', {
-    email: {
+    telegram: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
     },
-    name: {
-        type: DataTypes.STRING,
-    },
     hash: {
         type: STRING,
     },
-    phoneNumber: {
-        type: DataTypes.STRING,
-    },
     verification: {
-        type: DataTypes.STRING,
-    },
-    org: {
         type: DataTypes.STRING,
     },
 });
 
 User.sync().then(() => {
+    if(!isProduction){
     User.create({
-        email: "admin@msolidariti.org",
-        name: "Demo",
+            telegram: "admin",
         hash: bcrypt.hashSync("test", 10),
-        phoneNumber: "123",
     }).catch(e => {
         console.log("Couldn't create demo account. Probably exists.");
     });
+    }
 });
 
 
-function authUser(email, password, done) {
+function authUser(telegram, password, done) {
     User.findOne({
         where: {
-            email: email
+            telegram: telegram
         }
     }).then(user => {
         if (!user) {
@@ -115,11 +106,11 @@ function refreshVerification(user, done) {
     });
 }
 
-function createQRCode(email, done) {
+function createQRCode(telegram, done) {
 
     User.findOne({
         where: {
-            email: email
+            telegram: telegram
         }
     }).then(user => {
         refreshVerification(user, result => {
@@ -145,13 +136,11 @@ function checkVerification(id, done) {
     });
 }
 
-function createUser(email, password, name, phoneNumber, done) {
+function createUser(telegram, password, done) {
     hash = bcrypt.hashSync(password, 10);
     User.create({
-        email: email,
-        name: name,
+        telegram: telegram,
         hash: hash,
-        phoneNumber: phoneNumber,
     }).then(user => {
         if (!user) {
             done(false, "Could not create user");
@@ -167,8 +156,8 @@ function createUser(email, password, name, phoneNumber, done) {
     });
 }
 
-function addContact(userEmail, withUserID, done) {
-    User.findOne({ where: { email: userEmail } }).then(user => {
+function addContact(telegram, withUserID, done) {
+    User.findOne({ where: { telegram: telegram } }).then(user => {
         Contact.create({ user: user.id, with: withUserID })
             .then(res => {
                 done(true, "Successfully added contact");
@@ -199,12 +188,12 @@ app.use(cors({ credentials: true, origin: true, secure: true }));
 app.use(express.json())
 
 app.post('/login', (req, res) => {
-    reqEmail = req.body.email.toLowerCase();
-    const auth = authUser(reqEmail, req.body.password, (success, msg) => {
+    reqTelegram = req.body.telegram.toLowerCase();
+    const auth = authUser(reqTelegram, req.body.password, (success, msg) => {
         if (success) {
             req.session.regenerate(() => {
                 cookieExpiry = getCookieExpiry();
-                req.session.user = reqEmail;
+                req.session.user = reqTelegram;
                 res.send({ authorized: success, message: msg })
             });
         } else {
@@ -214,11 +203,11 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/create', (req, res) => {
-    reqEmail = req.body.email.toLowerCase();
+    reqTelegram = req.body.telegram.toLowerCase();
     if (req.session.verified) {
-        createUser(reqEmail, req.body.password, req.body.name, req.body.phoneNumber, (success, msg) => {
+        createUser(reqTelegram, req.body.password, (success, msg) => {
             cookieExpiry = getCookieExpiry();
-            req.session.user = reqEmail;
+            req.session.user = reqTelegram;
             if (success) {
                 addContact(req.session.user, req.session.verifiedBy, (sucesss, msg) => {
                     res.send({ success: success, message: msg });
