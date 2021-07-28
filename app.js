@@ -60,12 +60,9 @@ Contact.sync();
 
 const User = sequelize.define('User', {
     telegram: {
-        type: DataTypes.STRING,
+        type: DataTypes.INTEGER,
         allowNull: false,
         unique: true,
-    },
-    hash: {
-        type: STRING,
     },
     verification: {
         type: DataTypes.STRING,
@@ -130,10 +127,10 @@ function refreshVerification(user, done) {
 function createQRCode(telegram, done) {
 
     User.findOne({
-        where: {
-            telegram: telegram
-        }
-    })
+            where: {
+                telegram: telegram
+            }
+        })
         .then(user => {
             refreshVerification(user, result => {
                 const verifyURL = `${process.env.WEBSITE_URL}/#/verify/${encodeURIComponent(result.verification)}`;
@@ -185,7 +182,10 @@ function addContact(telegram, withUserID, done) {
             Contact.create({ user: user.id, with: withUserID })
                 .then(res => {
                     console.log(`Registering contact between ${user.id} and ${withUserID}`);
-                    sendTelegramMessage(withUser.telegram, "Someone scanned your QR code. You will be notified if they are tested positive with Covid. If you are tested positive, please tell this bot /COVIDPOSITIVE");
+                    sendTelegramMessage(withUser.telegram,
+                        "Someone scanned your QR code. You will be notified if they are tested positive with Covid. If you are tested positive, please tell this bot /COVIDPOSITIVE",
+                        () => {}
+                    );
                     done(true, "Successfully added contact");
                 })
                 .catch(e => {
@@ -203,10 +203,10 @@ function getCookieExpiry() {
 function setTelegramWebHook(done) {
     const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/setWebhook`;
     axios.post(url, {
-        url: `${process.env.SERVER_API_URL}/${process.env.TELEGRAM_SECRET}`,
-        allowed_updates: [],
-        drop_pending_updates: true,
-    })
+            url: `${process.env.SERVER_API_URL}/${process.env.TELEGRAM_SECRET}`,
+            allowed_updates: [],
+            drop_pending_updates: true,
+        })
         .then(res => { done(res) })
         .catch(err => { done(err) });
 }
@@ -214,9 +214,9 @@ function setTelegramWebHook(done) {
 function sendTelegramMessage(telegramID, message, done) {
     const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`;
     axios.post(url, {
-        chat_id: telegramID,
-        text: message,
-    })
+            chat_id: telegramID,
+            text: message,
+        })
         .then((res) => {
             done(res)
         })
@@ -241,11 +241,8 @@ app.use(session({
 app.use(cors({ credentials: true, origin: true, secure: true }));
 app.use(express.json())
 
-setTelegramWebHook(() => { });
+setTelegramWebHook(() => {});
 app.post(`/${process.env.TELEGRAM_SECRET}`, (req, res) => {
-    if (req.body.message) {
-        sendTelegramMessage(req.body.message.chat.id, `${req.body.message.text.toUpperCase()}`, (res) => { console.log(res) });
-    }
     res.send();
 });
 
