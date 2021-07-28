@@ -37,8 +37,7 @@ const storeDB = (() => {
 })();
 
 const store = new SequelizeStore({
-  db: storeDB,
-  expiration: process.env.COOKIE_EXPIRY_DURATION,
+  db: storeDB
 });
 
 const Contact = sequelize.define("Contact", {

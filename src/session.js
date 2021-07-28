@@ -7,6 +7,7 @@ const sessionOpts = {
   cookie: {
     secure: true,
     sameSite: "none",
+    maxAge: Number(process.env.SESSION_LENGTH),
   },
   store: store,
 };

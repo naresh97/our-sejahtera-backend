@@ -1,8 +1,7 @@
 const { User } = require("../db/db");
 const { addContact } = require("../db/utils");
 
-function VerifyRoute() {
-  (req, res) => {
+function VerifyRoute(req, res) {
     checkVerification(req.body.id, (success, msg, withUserID) => {
       req.session.verified = success;
       req.session.verifiedBy = withUserID;
@@ -23,7 +22,6 @@ function VerifyRoute() {
         res.status(400).send({ success: success, message: msg });
       }
     });
-  };
 }
 
 function checkVerification(id, done) {
