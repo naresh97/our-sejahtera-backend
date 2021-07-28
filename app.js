@@ -5,7 +5,9 @@ const bcrypt = require('bcrypt');
 const QRCode = require('qrcode');
 const cors = require('cors');
 const { createSecureServer } = require('http2');
+const { default: axios } = require('axios');
 require("dotenv-flow").config();
+const crypto = require('crypto');
 
 var SequelizeStore = require("connect-session-sequelize")(session.Store);
 
@@ -82,17 +84,36 @@ User.sync().then(() => {
 });
 
 
-function authUser(telegram, password, done) {
+function authUser(telegramResponse, done) {
+    let dataCheckArray = [];
+
+    for (const [key, value] of Object.entries(telegramResponse)) {
+        if (key == "hash") continue;
+        dataCheckArray.push(`${key}=${value}`);
+    }
+    dataCheckArray.sort();
+    const dataCheckString = dataCheckArray.join("\n");
+
+    secretKey = crypto.createHash("sha256").update(process.env.TELEGRAM_TOKEN).digest();
+    confirmationHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+
+    const authorized = confirmationHash == telegramResponse.hash;
+
+    if (!authorized) {
+        done({ authorized: false });
+    }
+
     User.findOne({
         where: {
-            telegram: telegram
+            telegram: telegramResponse.id,
         }
     }).then(user => {
         if (!user) {
-            done(false, "User not found")
+            createUser(telegramResponse.id, (success) => {
+                done({ authorized: success });
+            })
         } else {
-            const auth = bcrypt.compareSync(password, user.hash);
-            done(auth, auth ? "Authorized" : "Wrong password");
+            done({ authorized: true });
         }
     });
 }
@@ -109,10 +130,10 @@ function refreshVerification(user, done) {
 function createQRCode(telegram, done) {
 
     User.findOne({
-            where: {
-                telegram: telegram
-            }
-        })
+        where: {
+            telegram: telegram
+        }
+    })
         .then(user => {
             refreshVerification(user, result => {
                 const verifyURL = `${process.env.WEBSITE_URL}/#/verify/${encodeURIComponent(result.verification)}`;
@@ -140,11 +161,9 @@ function checkVerification(id, done) {
     });
 }
 
-function createUser(telegram, password, done) {
-    hash = bcrypt.hashSync(password, 10);
+function createUser(telegram, done) {
     User.create({
-        telegram: telegram,
-        hash: hash,
+        telegram: telegram
     }).then(user => {
         if (!user) {
             done(false, "Could not create user");
@@ -162,18 +181,49 @@ function createUser(telegram, password, done) {
 
 function addContact(telegram, withUserID, done) {
     User.findOne({ where: { telegram: telegram } }).then(user => {
-        Contact.create({ user: user.id, with: withUserID })
-            .then(res => {
-                done(true, "Successfully added contact");
-            })
-            .catch(e => {
-                done(false, e);
-            });
+        User.findOne({ where: { id: withUserID } }).then(withUser => {
+            Contact.create({ user: user.id, with: withUserID })
+                .then(res => {
+                    console.log(`Registering contact between ${user.id} and ${withUserID}`);
+                    sendTelegramMessage(withUser.telegram, "Someone scanned your QR code. You will be notified if they are tested positive with Covid. If you are tested positive, please tell this bot /COVIDPOSITIVE");
+                    done(true, "Successfully added contact");
+                })
+                .catch(e => {
+                    done(false, e);
+                });
+
+        })
     })
 }
 
 function getCookieExpiry() {
     return new Date(Date.now() + COOKIE_EXPIRY_DURATION);
+}
+
+function setTelegramWebHook(done) {
+    const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/setWebhook`;
+    axios.post(url, {
+        url: `${process.env.SERVER_API_URL}/${process.env.TELEGRAM_SECRET}`,
+        allowed_updates: [],
+        drop_pending_updates: true,
+    })
+        .then(res => { done(res) })
+        .catch(err => { done(err) });
+}
+
+function sendTelegramMessage(telegramID, message, done) {
+    const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`;
+    axios.post(url, {
+        chat_id: telegramID,
+        text: message,
+    })
+        .then((res) => {
+            done(res)
+        })
+        .catch(err => {
+            console.error("Problem sending Telegram message.");
+            done(err)
+        });
 }
 
 const app = express();
@@ -191,17 +241,25 @@ app.use(session({
 app.use(cors({ credentials: true, origin: true, secure: true }));
 app.use(express.json())
 
+setTelegramWebHook(() => { });
+app.post(`/${process.env.TELEGRAM_SECRET}`, (req, res) => {
+    if (req.body.message) {
+        sendTelegramMessage(req.body.message.chat.id, `${req.body.message.text.toUpperCase()}`, (res) => { console.log(res) });
+    }
+    res.send();
+});
+
 app.post('/login', (req, res) => {
-    reqTelegram = req.body.telegram.toLowerCase();
-    const auth = authUser(reqTelegram, req.body.password, (success, msg) => {
+    telegramResponse = req.body.telegramResponse;
+    const auth = authUser(telegramResponse, (success, msg) => {
         if (success) {
             const verified = req.session.verified;
             const verifiedBy = req.session.verifiedBy;
             req.session.regenerate(() => {
                 cookieExpiry = getCookieExpiry();
-                req.session.user = reqTelegram;
+                req.session.user = telegramResponse.id;
                 if (verified) {
-                    addContact(reqTelegram, verifiedBy, (contactSuccess) => {
+                    addContact(telegramResponse.id, verifiedBy, (contactSuccess) => {
                         res.send({ authorized: success, message: msg, contactSuccess: contactSuccess });
                     });
                 } else {
@@ -213,25 +271,6 @@ app.post('/login', (req, res) => {
         }
     });
 });
-
-app.post('/create', (req, res) => {
-    reqTelegram = req.body.telegram.toLowerCase();
-    if (req.session.verified) {
-        createUser(reqTelegram, req.body.password, (success, msg) => {
-            cookieExpiry = getCookieExpiry();
-            req.session.user = reqTelegram;
-            if (success) {
-                addContact(req.session.user, req.session.verifiedBy, (sucesss, msg) => {
-                    res.send({ success: success, message: msg });
-                });
-            } else {
-                res.send({ success: success, message: msg });
-            }
-        });
-    } else {
-        res.status(401).send("Not verified");
-    }
-})
 
 app.get('/code', (req, res) => {
     if (!req.session.user) {
