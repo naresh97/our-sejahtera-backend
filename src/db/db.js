@@ -37,7 +37,7 @@ const storeDB = (() => {
 })();
 
 const store = new SequelizeStore({
-  db: storeDB
+  db: storeDB,
 });
 
 const Contact = sequelize.define("Contact", {
@@ -50,7 +50,6 @@ const Contact = sequelize.define("Contact", {
     allowNull: false,
   },
 });
-
 
 const User = sequelize.define("User", {
   telegram: {
