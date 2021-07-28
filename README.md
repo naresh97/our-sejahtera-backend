@@ -12,7 +12,7 @@ This is the backend API provider for the [SSR Tracing Web-App](https://github.co
 ### Building
 
 - Run `npm install` to install the required packages
-- Run `nodejs ./app.js` to start the server
+- Run `nodejs ./src/app.js` to start the server
 
 ### .env
 
