@@ -1,25 +1,29 @@
 {
-    "name": "ssr-tracing-backend",
-    "version": "1.0.0",
-    "description": "",
-    "main": "app.js",
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "start": "node app.js"
-    },
-    "author": "",
-    "license": "ISC",
-    "dependencies": {
-        "axios": "^0.21.1",
-        "bcrypt": "^5.0.1",
-        "connect-session-sequelize": "^7.1.1",
-        "cors": "^2.8.5",
-        "dotenv-flow": "^3.2.0",
-        "express": "^4.17.1",
-        "express-session": "^1.17.2",
-        "pg": "^8.6.0",
-        "qrcode": "^1.4.4",
-        "sequelize": "^6.6.5",
-        "sqlite3": "^5.0.2"
-    }
+  "name": "ssr-tracing-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/app.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "bcrypt": "^5.0.1",
+    "connect-session-sequelize": "^7.1.1",
+    "cors": "^2.8.5",
+    "dotenv-flow": "^3.2.0",
+    "express": "^4.17.1",
+    "express-session": "^1.17.2",
+    "pg": "^8.6.0",
+    "qrcode": "^1.4.4",
+    "sequelize": "^6.6.5",
+    "sqlite3": "^5.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^7.31.0",
+    "prettier": "2.3.2"
+  }
 }
