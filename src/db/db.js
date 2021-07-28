@@ -40,7 +40,6 @@ const store = new SequelizeStore({
   db: storeDB,
   expiration: process.env.COOKIE_EXPIRY_DURATION,
 });
-store.sync();
 
 const Contact = sequelize.define("Contact", {
   user: {
@@ -52,7 +51,7 @@ const Contact = sequelize.define("Contact", {
     allowNull: false,
   },
 });
-Contact.sync();
+
 
 const User = sequelize.define("User", {
   telegram: {
@@ -65,6 +64,8 @@ const User = sequelize.define("User", {
   },
 });
 
+Contact.sync();
+
 User.sync().then(() => {
   if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD) {
     User.create({
@@ -74,6 +75,8 @@ User.sync().then(() => {
     });
   }
 });
+
+store.sync();
 
 exports.User = User;
 exports.Contact = Contact;
