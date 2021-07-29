@@ -7,10 +7,9 @@ function LoginRoute(req, res) {
 
   authUser(telegramResponse, (success, msg) => {
     if (success) {
-
       // User is already logged in
-      if(req.session.user == telegramResponse.id){
-        res.send({authorized: success});
+      if (req.session.user == telegramResponse.id) {
+        res.send({ authorized: success });
         return;
       }
 
@@ -34,7 +33,6 @@ function LoginRoute(req, res) {
       res.status(401).send({ authorized: success, message: msg });
     }
   });
-
 }
 
 function authUser(telegramResponse, done) {
