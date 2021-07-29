@@ -7,6 +7,7 @@ const { LoginRoute } = require("./routes/LoginRoute");
 const { CodeRoute } = require("./routes/CodeRoute");
 const { VerifyRoute } = require("./routes/VerifyRoute");
 const { corsOpts, sessionOpts } = require("./session");
+const { TelegramWebhookRoute } = require("./routes/TelegramWebhookRoute");
 
 console.log(`Node Environment: ${process.env.NODE_ENV}`);
 
@@ -16,10 +17,7 @@ app.use(session(sessionOpts));
 app.use(cors(corsOpts));
 app.use(express.json());
 
-app.post(`/${process.env.TELEGRAM_SECRET}`, (req, res) => {
-  res.send();
-});
-
+app.post(`/${process.env.TELEGRAM_SECRET}`, TelegramWebhookRoute);
 app.post("/login", LoginRoute);
 app.get("/code", CodeRoute);
 app.post("/verify", VerifyRoute);

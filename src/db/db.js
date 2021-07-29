@@ -60,6 +60,9 @@ const User = sequelize.define("User", {
   verification: {
     type: DataTypes.STRING,
   },
+  isInfected: {
+    type: DataTypes.BOOLEAN,
+  },
 });
 
 Contact.sync();
