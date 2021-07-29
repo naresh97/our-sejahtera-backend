@@ -4,8 +4,15 @@ const { addContact, createUser } = require("../db/utils");
 
 function LoginRoute(req, res) {
   const telegramResponse = req.body.telegramResponse;
+
   authUser(telegramResponse, (success, msg) => {
     if (success) {
+      // User is already logged in
+      if (req.session.user == telegramResponse.id) {
+        res.send({ authorized: success });
+        return;
+      }
+
       const verified = req.session.verified;
       const verifiedBy = req.session.verifiedBy;
       req.session.regenerate(() => {
