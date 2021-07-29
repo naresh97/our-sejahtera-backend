@@ -22,14 +22,9 @@ function TelegramWebhookRoute(req, res) {
                 });
             }
         }
-      });
-    }
-    catch(e){
+    }catch(e){
         console.log("Could not get Telegram Message");
     }
-
-
-    
 
   res.send();
 }
