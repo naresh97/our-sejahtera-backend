@@ -16,7 +16,7 @@ function setTelegramWebHook(done) {
     });
 }
 
-function sendTelegramMessage(telegramID, message, done) {
+function sendTelegramMessage(telegramID, message, done = () => {}) {
   const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`;
   axios
     .post(url, {
