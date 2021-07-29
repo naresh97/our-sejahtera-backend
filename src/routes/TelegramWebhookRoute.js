@@ -1,32 +1,39 @@
 const { Op } = require("sequelize");
 const { User, Contact } = require("../db/db");
+const { strings_en } = require("../strings");
 const { sendTelegramMessage } = require("../telegram");
 
 function TelegramWebhookRoute(req, res) {
 
     try{
-        const messageText = req.body.message.text;
-        const telegramID = req.body.message.from.id;
-        if (messageText.toLowerCase() == "/covidpositive") {
-            userInfected(telegramID, (result) => {
-                if(result.saved){
-                    sendTelegramMessage(telegramID, "Thanks for informing us. We will notify the people you were in contact with!", ()=>{});
-                    informContacts(telegramID, ()=>{});
-                }else{
-                    sendTelegramMessage(telegramID, "Sorry, something went wrong.", ()=>{});
-                }
-            });
+        if(req.body.message.connected_website){
+            sendTelegramMessage(req.body.message.from.id, "Thanks for using OurSejahtera! Let's stay safer together <3");
+        }else{
+            const messageText = req.body.message.text;
+            const telegramID = req.body.message.from.id;
+            if (messageText.toLowerCase() == "/covidpositive") {
+                userInfected(telegramID, (result) => {
+                    if(result.saved){
+                        sendTelegramMessage(telegramID, strings_en.telegram_inform_positive);
+                        informContacts(telegramID);
+                    }else{
+                        sendTelegramMessage(telegramID, "Sorry, something went wrong.");
+                    }
+                });
+            }
         }
     }
     catch(e){
         console.log("Could not get Telegram Message");
     }
+
+
     
 
     res.send();
 }
 
-function informContacts(telegramID, doneCallback){
+function informContacts(telegramID, doneCallback=()=>{}){
     User.findOne({
         where: {
             telegram: telegramID,
@@ -47,7 +54,7 @@ function informContacts(telegramID, doneCallback){
                             id: otherPersonID,
                         }
                     }).then(otherPerson => {
-                        sendTelegramMessage(otherPerson.telegram, "You're infected.", ()=>{});
+                        sendTelegramMessage(otherPerson.telegram, strings_en.telegram_inform_infect);
                     });
                 });
             });

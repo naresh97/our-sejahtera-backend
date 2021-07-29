@@ -1,3 +1,4 @@
+const { strings_en } = require("../strings");
 const { sendTelegramMessage } = require("../telegram");
 const { User, Contact } = require("./db");
 
@@ -11,7 +12,7 @@ function addContact(telegram, withUserID, done) {
           );
           sendTelegramMessage(
             withUser.telegram,
-            "Someone scanned your QR code. You will be notified if they are tested positive with Covid. If you are tested positive, please tell this bot /COVIDPOSITIVE",
+            strings_en.telegram_qr_scanned,
             () => {}
           );
           done(true, "Successfully added contact");
