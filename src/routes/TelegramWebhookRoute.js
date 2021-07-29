@@ -22,6 +22,7 @@ function TelegramWebhookRoute(req, res) {
                 });
             }
         }
+      });
     }
     catch(e){
         console.log("Could not get Telegram Message");
@@ -30,7 +31,7 @@ function TelegramWebhookRoute(req, res) {
 
     
 
-    res.send();
+  res.send();
 }
 
 function informContacts(telegramID, doneCallback=()=>{}){
@@ -64,25 +65,30 @@ function informContacts(telegramID, doneCallback=()=>{}){
 }
 
 function userInfected(telegramID, doneCallback) {
-    User.findOne({
-        where: {
-            telegram: telegramID,
-        },
-    }).then((user) => {
-        if (!user) {
-            done({saved: false});
-        } else {
-            user.isInfected = true;
-            user.save().then(result => {
-                if(result){
-                
-                    doneCallback({saved: true});
-                }
-            }).catch(err=>{doneCallback({saved: false})});
-        }
+  User.findOne({
+    where: {
+      telegram: telegramID,
+    },
+  })
+    .then((user) => {
+      if (!user) {
+        done({ saved: false });
+      } else {
+        user.isInfected = true;
+        user
+          .save()
+          .then((result) => {
+            if (result) {
+              doneCallback({ saved: true });
+            }
+          })
+          .catch((err) => {
+            doneCallback({ saved: false });
+          });
+      }
     })
-    .catch(err=>{
-        doneCallback({saved: false});
+    .catch((err) => {
+      doneCallback({ saved: false });
     });
 }
 
