@@ -1,18 +1,20 @@
-const session = require("express-session");
-const { Sequelize, DataTypes } = require("sequelize");
-var SequelizeStore = require("connect-session-sequelize")(session.Store);
+import ConnectSessionSequelize from "connect-session-sequelize";
+import session from "express-session";
+import { DataTypes, Model, Optional, Sequelize } from "sequelize";
 
-const isProduction = process.env.NODE_ENV == "production";
+const SequelizeStore = ConnectSessionSequelize(session.Store);
 
-const sequelize = (() => {
+const isProduction: boolean = process.env.NODE_ENV == "production";
+
+export const sequelize: Sequelize = (() => {
   if (isProduction) {
     return new Sequelize(
-      process.env.DB_DATA_NAME,
-      process.env.DB_USER,
-      process.env.DB_PASS,
+      process.env.DB_DATA_NAME || "DATABASE",
+      process.env.DB_USER || "USERNAME",
+      process.env.DB_PASS || "PASSWORD",
       {
-        host: process.env.DB_PATH,
-        dialect: process.env.DB_DATA_DIALECT,
+        host: process.env.DB_PATH || "localhost",
+        dialect: "postgres",
       }
     );
   } else {
@@ -20,15 +22,15 @@ const sequelize = (() => {
   }
 })();
 
-const storeDB = (() => {
+export const storeDB: Sequelize = (() => {
   if (isProduction) {
     return new Sequelize(
-      process.env.DB_STORE_NAME,
-      process.env.DB_USER,
-      process.env.DB_PASS,
+      process.env.DB_STORE_NAME || "DATABASE",
+      process.env.DB_USER || "USERNAME",
+      process.env.DB_PASS || "PASSWORD",
       {
         host: process.env.DB_PATH,
-        dialect: process.env.DB_DATA_DIALECT,
+        dialect: "postgres",
       }
     );
   } else {
@@ -36,11 +38,22 @@ const storeDB = (() => {
   }
 })();
 
-const store = new SequelizeStore({
+export const store = new SequelizeStore({
   db: storeDB,
 });
 
-const Contact = sequelize.define("Contact", {
+export type UserRowID = number;
+export type TelegramID = number;
+export type VerificationString = string;
+
+interface ContactAttributes {
+  user: UserRowID;
+  with: UserRowID;
+}
+export interface ContactInterface
+  extends Model<ContactAttributes, ContactAttributes>,
+    ContactAttributes {}
+export const Contact = sequelize.define<ContactInterface>("Contact", {
   user: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -51,7 +64,25 @@ const Contact = sequelize.define("Contact", {
   },
 });
 
-const User = sequelize.define("User", {
+interface UserAttributes {
+  id: UserRowID;
+  telegram: TelegramID;
+  verification: VerificationString;
+  isInfected: boolean;
+}
+interface UserCreationAttributes {
+  telegram: TelegramID;
+}
+export interface UserInstance
+  extends Model<UserAttributes, UserCreationAttributes>,
+    UserAttributes {}
+
+export const User = sequelize.define<UserInstance>("User", {
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  },
   telegram: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -70,7 +101,7 @@ Contact.sync();
 User.sync().then(() => {
   if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD) {
     User.create({
-      telegram: process.env.ADMIN_USERNAME,
+      telegram: 12345,
     }).catch(() => {
       console.log("Couldn't create admin account. Probably exists.");
     });
@@ -78,9 +109,3 @@ User.sync().then(() => {
 });
 
 store.sync();
-
-exports.User = User;
-exports.Contact = Contact;
-exports.sequelize = sequelize;
-exports.storeDB = storeDB;
-exports.store = store;

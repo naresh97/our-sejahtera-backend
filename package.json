@@ -24,6 +24,11 @@
   },
   "devDependencies": {
     "@tsconfig/node14": "^1.0.1",
+    "@types/bcrypt": "^5.0.0",
+    "@types/cors": "^2.8.12",
+    "@types/express": "^4.17.13",
+    "@types/express-session": "^1.17.4",
+    "@types/qrcode": "^1.4.1",
     "eslint": "^7.31.0",
     "prettier": "2.3.2"
   }

@@ -1,15 +1,21 @@
-const { User } = require("../db/db");
-const { addContact } = require("../db/utils");
+import { Request, Response } from "express";
+import { User, UserRowID, VerificationString } from "../db/db";
+import { addContact } from "../db/utils";
 
-function VerifyRoute(req, res) {
+interface VerifyRequest extends Request {
+  body: {
+    id: VerificationString;
+  };
+}
+
+export function VerifyRoute(req: VerifyRequest, res: Response) {
   checkVerification(req.body.id, (success, msg, withUserID) => {
-    req.session.verified = success;
-    req.session.verifiedBy = withUserID;
-
     if (success) {
+      req.session.verified = success;
+      req.session.verifiedBy = withUserID!;
       if (req.session.user) {
         // If Logged In
-        addContact(req.session.user, withUserID, (success, msg) => {
+        addContact(req.session.user, withUserID!, (success, msg) => {
           res
             .status(success ? 200 : 400)
             .send({ success: success, message: msg, loggedIn: true });
@@ -24,16 +30,19 @@ function VerifyRoute(req, res) {
   });
 }
 
-function checkVerification(id, done) {
+function checkVerification(
+  verification: VerificationString,
+  callback: (success: boolean, msg: string, userID?: UserRowID) => void
+): void {
   User.findOne({
     where: {
-      verification: decodeURIComponent(id),
+      verification: decodeURIComponent(verification),
     },
   }).then((user) => {
     if (user) {
-      done(true, "User verified", user.id);
+      callback(true, "User verified", user.id);
     } else {
-      done(false, "No such verification");
+      callback(false, "No such verification");
     }
   });
 }

@@ -1,11 +1,30 @@
-const crypto = require("crypto");
-const { User } = require("../db/db");
-const { addContact, createUser } = require("../db/utils");
+import { Request, Response } from "express";
+import { TelegramID, User, UserRowID } from "../db/db";
+import crypto from "crypto";
+import { addContact, createUser } from "../db/utils";
 
-function LoginRoute(req, res) {
+declare module "express-session" {
+  interface Session {
+    verified: boolean;
+    verifiedBy: UserRowID;
+  }
+}
+
+type TelegramLoginResponse = {
+  id: TelegramID;
+  hash: string;
+};
+
+interface LoginRequest extends Request {
+  body: {
+    telegramResponse: TelegramLoginResponse;
+  };
+}
+
+export function LoginRoute(req: LoginRequest, res: Response) {
   const telegramResponse = req.body.telegramResponse;
-  authUser(telegramResponse, (success, msg) => {
-    if (success) {
+  authUser(telegramResponse, (authObject) => {
+    if (authObject) {
       const verified = req.session.verified;
       const verifiedBy = req.session.verifiedBy;
       req.session.regenerate(() => {
@@ -13,22 +32,24 @@ function LoginRoute(req, res) {
         if (verified) {
           addContact(telegramResponse.id, verifiedBy, (contactSuccess) => {
             res.send({
-              authorized: success,
-              message: msg,
+              authorized: authObject.authorized,
               contactSuccess: contactSuccess,
             });
           });
         } else {
-          res.send({ authorized: success, message: msg });
+          res.send(authObject);
         }
       });
     } else {
-      res.status(401).send({ authorized: success, message: msg });
+      res.status(401).send(authObject);
     }
   });
 }
 
-function authUser(telegramResponse, done) {
+function authUser(
+  telegramResponse: TelegramLoginResponse,
+  callback: (callbackObject: { authorized: boolean }) => void
+): void {
   let dataCheckArray = [];
 
   for (const [key, value] of Object.entries(telegramResponse)) {
@@ -40,7 +61,7 @@ function authUser(telegramResponse, done) {
 
   const secretKey = crypto
     .createHash("sha256")
-    .update(process.env.TELEGRAM_TOKEN)
+    .update(process.env.TELEGRAM_TOKEN!)
     .digest();
   const confirmationHash = crypto
     .createHmac("sha256", secretKey)
@@ -50,7 +71,7 @@ function authUser(telegramResponse, done) {
   const authorized = confirmationHash == telegramResponse.hash;
 
   if (!authorized) {
-    done({ authorized: false });
+    callback({ authorized: false });
   }
 
   User.findOne({
@@ -60,10 +81,10 @@ function authUser(telegramResponse, done) {
   }).then((user) => {
     if (!user) {
       createUser(telegramResponse.id, (success) => {
-        done({ authorized: success });
+        callback({ authorized: success });
       });
     } else {
-      done({ authorized: true });
+      callback({ authorized: true });
     }
   });
 }

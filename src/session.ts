@@ -1,7 +1,8 @@
-const { store } = require("./db/db");
+import { SessionOptions } from "express-session";
+import { store } from "./db/db";
 
-const sessionOpts = {
-  secret: process.env.SERVER_SESSION_SECRET,
+export const sessionOpts: SessionOptions = {
+  secret: process.env.SERVER_SESSION_SECRET!,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -12,7 +13,4 @@ const sessionOpts = {
   store: store,
 };
 
-const corsOpts = { credentials: true, origin: true, secure: true };
-
-exports.sessionOpts = sessionOpts;
-exports.corsOpts = corsOpts;
+export const corsOpts = { credentials: true, origin: true, secure: true };

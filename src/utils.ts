@@ -1,5 +1,3 @@
-function getCookieExpiry() {
-  return new Date(Date.now() + process.env.COOKIE_EXPIRY_DURATION);
+export function getCookieExpiry(): Date {
+  return new Date(Date.now() + Number(process.env.COOKIE_EXPIRY_DURATION));
 }
-
-exports.getCookieExpiry = getCookieExpiry;

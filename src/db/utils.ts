@@ -1,18 +1,26 @@
-const { sendTelegramMessage } = require("../telegram");
-const { User, Contact } = require("./db");
+import { sendTelegramMessage } from "../telegram";
+import { User, Contact, TelegramID, UserRowID } from "./db";
 
-function addContact(telegram, withUserID, done) {
-  User.findOne({ where: { telegram: telegram } }).then((user) => {
-    User.findOne({ where: { id: withUserID } }).then((withUser) => {
-      Contact.create({ user: user.id, with: withUserID })
+export function addContact(
+  userATelegram: TelegramID,
+  userBRowID: UserRowID,
+  done: (success: boolean, message: string) => void
+): void {
+  User.findOne({ where: { telegram: userATelegram } }).then((userA) => {
+    User.findOne({ where: { id: userBRowID } }).then((userB) => {
+      if (!!userA || !!userB) {
+        done(false, "Could not find user.");
+        return;
+      }
+
+      Contact.create({ user: userA!.id, with: userBRowID })
         .then(() => {
           console.log(
-            `Registering contact between ${user.id} and ${withUserID}`
+            `Registering contact between ${userA!.id} and ${userBRowID}`
           );
           sendTelegramMessage(
-            withUser.telegram,
-            "Someone scanned your QR code. You will be notified if they are tested positive with Covid. If you are tested positive, please tell this bot /COVIDPOSITIVE",
-            () => {}
+            userB!.telegram,
+            "Someone scanned your QR code. You will be notified if they are tested positive with Covid. If you are tested positive, please tell this bot /COVIDPOSITIVE"
           );
           done(true, "Successfully added contact");
         })
@@ -23,25 +31,25 @@ function addContact(telegram, withUserID, done) {
   });
 }
 
-function createUser(telegram, done) {
+export function createUser(
+  telegram: TelegramID,
+  callback: (success: boolean, message: string) => void
+): void {
   User.create({
     telegram: telegram,
   })
     .then((user) => {
       if (!user) {
-        done(false, "Could not create user");
+        callback(false, "Could not create user");
       } else {
-        done(true, "Success");
+        callback(true, "Success");
       }
     })
     .catch((reason) => {
       if (reason.name == "SequelizeUniqueConstraintError") {
-        done(false, "User already exists");
+        callback(false, "User already exists");
       } else {
-        done(false, "Unknown error");
+        callback(false, "Unknown error");
       }
     });
 }
-
-exports.addContact = addContact;
-exports.createUser = createUser;

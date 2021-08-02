@@ -1,13 +1,12 @@
-const express = require("express");
-const session = require("express-session");
-const cors = require("cors");
+import express = require("express");
+import session = require("express-session");
+import cors = require("cors");
+import { corsOpts, sessionOpts } from "./session";
+import { TelegramWebhookRoute } from "./routes/TelegramWebhookRoute";
+import { LoginRoute } from "./routes/LoginRoute";
+import { CodeRoute } from "./routes/CodeRoute";
+import { VerifyRoute } from "./routes/VerifyRoute";
 require("dotenv-flow").config();
-
-const { LoginRoute } = require("./routes/LoginRoute");
-const { CodeRoute } = require("./routes/CodeRoute");
-const { VerifyRoute } = require("./routes/VerifyRoute");
-const { corsOpts, sessionOpts } = require("./session");
-const { TelegramWebhookRoute } = require("./routes/TelegramWebhookRoute");
 
 console.log(`Node Environment: ${process.env.NODE_ENV}`);
 
