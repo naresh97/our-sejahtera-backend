@@ -23,6 +23,7 @@
     "sqlite3": "^5.0.2"
   },
   "devDependencies": {
+    "@tsconfig/node14": "^1.0.1",
     "eslint": "^7.31.0",
     "prettier": "2.3.2"
   }
