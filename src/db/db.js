@@ -63,6 +63,9 @@ const User = sequelize.define("User", {
   isInfected: {
     type: DataTypes.BOOLEAN,
   },
+  infectionDate: {
+    type: DataTypes.DATE,
+  }
 });
 
 Contact.sync();
