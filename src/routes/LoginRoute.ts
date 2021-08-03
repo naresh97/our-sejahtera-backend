@@ -25,6 +25,11 @@ export function LoginRoute(req: LoginRequest, res: Response) {
   const telegramResponse = req.body.telegramResponse;
   authUser(telegramResponse, (authObject) => {
     if (authObject) {
+      // User is already logged in
+      if (req.session.user == telegramResponse.id) {
+        res.send(authObject);
+        return;
+      }
       const verified = req.session.verified;
       const verifiedBy = req.session.verifiedBy;
       req.session.regenerate(() => {

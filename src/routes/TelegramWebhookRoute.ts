@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Op } from "sequelize/types";
 import { Contact, TelegramID, User } from "../db/db";
+import { strings_en } from "../strings";
 import { sendTelegramMessage } from "../telegram";
 
 interface TelegramWebhookRequest extends Request {
@@ -10,6 +11,7 @@ interface TelegramWebhookRequest extends Request {
       from: {
         id: TelegramID;
       };
+      connected_website: string;
     };
   };
 }
@@ -19,6 +21,12 @@ export function TelegramWebhookRoute(
   res: Response
 ) {
   try {
+    if (req.body.message.connected_website) {
+      sendTelegramMessage(
+        req.body.message.from.id,
+        "Thanks for using OurSejahtera! Let's stay safer together <3"
+      );
+    } else {
     const messageText = req.body.message.text;
     const telegramID = req.body.message.from.id;
     if (messageText.toLowerCase() == "/covidpositive") {
@@ -26,7 +34,7 @@ export function TelegramWebhookRoute(
         if (result.saved) {
           sendTelegramMessage(
             telegramID,
-            "Thanks for informing us. We will notify the people you were in contact with!"
+            strings_en.telegram_inform_positive,
           );
           informContacts(telegramID);
         } else {
@@ -34,6 +42,7 @@ export function TelegramWebhookRoute(
         }
       });
     }
+  }
   } catch (e) {
     console.log("Could not get Telegram Message");
   }
@@ -63,7 +72,7 @@ function informContacts(telegramID: TelegramID) {
             },
           }).then((otherPerson) => {
             otherPerson &&
-              sendTelegramMessage(otherPerson.telegram, "You're infected.");
+              sendTelegramMessage(otherPerson.telegram, strings_en.telegram_inform_infect);
           });
         });
       });
