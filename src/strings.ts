@@ -15,5 +15,3 @@ local COVID19 guidelines.",
 be notified if they report being tested positive with COVID19. If \
 you are tested positive, please tell me /COVIDPOSITIVE",
 };
-
-exports.strings_en = strings_en;
