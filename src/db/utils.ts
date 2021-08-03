@@ -9,7 +9,7 @@ export function addContact(
 ): void {
   User.findOne({ where: { telegram: userATelegram } }).then((userA) => {
     User.findOne({ where: { id: userBRowID } }).then((userB) => {
-      if (!!userA || !!userB) {
+      if (!userA || !userB) {
         done(false, "Could not find user.");
         return;
       }

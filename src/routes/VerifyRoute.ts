@@ -46,5 +46,3 @@ function checkVerification(
     }
   });
 }
-
-exports.VerifyRoute = VerifyRoute;

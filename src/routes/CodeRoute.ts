@@ -21,7 +21,7 @@ export function CodeRoute(req: Request, res: Response) {
 
 function createQRCode(
   telegram: TelegramID,
-  callback: (errorMessage: string, url?: string) => void
+  callback: (errorMessage: string | Error, url?: string) => void
 ): void {
   User.findOne({
     where: {
@@ -38,7 +38,7 @@ function createQRCode(
             verifyURL,
             { width: 300, height: 300 } as QRCodeToDataURLOptions,
             (error, url) => {
-              callback(error.message, url);
+              callback(error, url);
             }
           );
         });
