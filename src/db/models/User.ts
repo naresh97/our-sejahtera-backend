@@ -37,7 +37,7 @@ export const User = sequelize.define<UserInstance>("User", {
 User.sync().then(() => {
   if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD) {
     User.create({
-      telegram: 12345,
+      telegram: 12345 as TelegramID,
     }).catch(() => {
       console.log("Couldn't create admin account. Probably exists.");
     });

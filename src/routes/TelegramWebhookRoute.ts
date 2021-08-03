@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Op } from "sequelize";
 import { Contact } from "../db/models/Contact";
 import { User } from "../db/models/User";
+import { getUserByRowID, getUserByTelegramID } from "../db/models/User.helper";
 import { strings_en } from "../strings";
 import { sendTelegramMessage } from "../telegram";
 import { TelegramID } from "../types";
@@ -32,8 +33,8 @@ export function TelegramWebhookRoute(
       const messageText = req.body.message.text;
       const telegramID = req.body.message.from.id;
       if (messageText.toLowerCase() == "/covidpositive") {
-        userInfected(telegramID, (result) => {
-          if (result.saved) {
+        userInfected(telegramID, (success) => {
+          if (success) {
             sendTelegramMessage(
               telegramID,
               strings_en.telegram_inform_positive
@@ -53,29 +54,20 @@ export function TelegramWebhookRoute(
 }
 
 function informContacts(telegramID: TelegramID) {
-  User.findOne({
-    where: {
-      telegram: telegramID,
-    },
-  }).then((user) => {
+  getUserByTelegramID(telegramID, (user) => {
     if (user) {
-      const userRowID = user.id;
       Contact.findAll({
         where: {
-          [Op.or]: [{ user: userRowID }, { with: userRowID }],
+          [Op.or]: [{ user: user.id }, { with: user.id }],
         },
       }).then((result) => {
         result.forEach((contact) => {
           const otherPersonID =
-            contact.user == userRowID ? contact.with : contact.user;
-          User.findOne({
-            where: {
-              id: otherPersonID,
-            },
-          }).then((otherPerson) => {
-            otherPerson &&
+            contact.user == user.id ? contact.with : contact.user;
+          getUserByRowID(otherPersonID, (otherUser) => {
+            otherUser &&
               sendTelegramMessage(
-                otherPerson.telegram,
+                otherUser.telegram,
                 strings_en.telegram_inform_infect
               );
           });
@@ -87,31 +79,21 @@ function informContacts(telegramID: TelegramID) {
 
 function userInfected(
   telegramID: TelegramID,
-  callback: (callbackObject: { saved: boolean }) => void
+  callback: (success: boolean) => void
 ): void {
-  User.findOne({
-    where: {
-      telegram: telegramID,
-    },
-  })
-    .then((user) => {
-      if (!user) {
-        callback({ saved: false });
-      } else {
-        user.isInfected = true;
-        user
-          .save()
-          .then((result) => {
-            if (result) {
-              callback({ saved: true });
-            }
-          })
-          .catch((err) => {
-            callback({ saved: false });
-          });
-      }
-    })
-    .catch((err) => {
-      callback({ saved: false });
-    });
+  getUserByTelegramID(telegramID, (user) => {
+    if (!!user) {
+      user.isInfected = true;
+      user
+        .save()
+        .then((result) => {
+          callback(!!result);
+        })
+        .catch(() => {
+          callback(false);
+        });
+    } else {
+      callback(false);
+    }
+  });
 }

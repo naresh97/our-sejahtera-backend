@@ -3,29 +3,30 @@ import { sendTelegramMessage } from "../telegram";
 import { TelegramID, UserRowID } from "../types";
 import { Contact } from "./models/Contact";
 import { User } from "./models/User";
+import { getUserByRowID, getUserByTelegramID } from "./models/User.helper";
 
 export function addContact(
   userATelegram: TelegramID,
-  userBRowID: UserRowID,
-  done: (success: boolean, message: string) => void
+  userBTelegram: TelegramID,
+  callback: (success: boolean, message?: string) => void
 ): void {
-  User.findOne({ where: { telegram: userATelegram } }).then((userA) => {
-    User.findOne({ where: { id: userBRowID } }).then((userB) => {
+  getUserByTelegramID(userATelegram, (userA) => {
+    getUserByTelegramID(userBTelegram, (userB) => {
       if (!userA || !userB) {
-        done(false, "Could not find user.");
+        callback(false, "Could not find user.");
         return;
       }
 
-      Contact.create({ user: userA!.id, with: userBRowID })
+      Contact.create({ user: userA.id, with: userB.id })
         .then(() => {
           console.log(
-            `Registering contact between ${userA!.id} and ${userBRowID}`
+            `Registering contact between ${userA.id} and ${userB.id}`
           );
-          sendTelegramMessage(userB!.telegram, strings_en.telegram_qr_scanned);
-          done(true, "Successfully added contact");
+          sendTelegramMessage(userB.telegram, strings_en.telegram_qr_scanned);
+          callback(true, "Successfully added contact");
         })
         .catch((e) => {
-          done(false, e);
+          callback(false, e);
         });
     });
   });

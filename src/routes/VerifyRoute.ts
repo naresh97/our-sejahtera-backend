@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { User } from "../db/models/User";
+import { getUserByVerification } from "../db/models/User.helper";
 import { addContact } from "../db/utils";
 import { UserRowID, VerificationString } from "../types";
 
@@ -10,40 +11,34 @@ interface VerifyRequest extends Request {
 }
 
 export function VerifyRoute(req: VerifyRequest, res: Response) {
-  checkVerification(req.body.id, (success, msg, withUserID) => {
-    if (success) {
-      req.session.verified = success;
-      req.session.verifiedBy = withUserID!;
-      if (req.session.user) {
-        // If Logged In
-        addContact(req.session.user, withUserID!, (success, msg) => {
-          res
-            .status(success ? 200 : 400)
-            .send({ success: success, message: msg, loggedIn: true });
-        });
+  getUserByVerification(
+    decodeURIComponent(req.body.id) as VerificationString,
+    (verifiedByUser, message) => {
+      if (!!verifiedByUser) {
+        req.session.isVerified = !!verifiedByUser;
+        req.session.verifiedByTelegramID = verifiedByUser.telegram;
+        if (req.session.userTelegramID) {
+          // If Logged In
+          addContact(
+            req.session.userTelegramID,
+            verifiedByUser.telegram,
+            (success, message) => {
+              res
+                .status(success ? 200 : 400)
+                .send({ success: success, message: message, loggedIn: true });
+            }
+          );
+        } else {
+          // If Not Logged In
+          res.send({
+            success: !!verifiedByUser,
+            message: message,
+            loggedIn: false,
+          });
+        }
       } else {
-        // If Not Logged In
-        res.send({ success: success, message: msg, loggedIn: false });
+        res.status(400).send({ success: !!verifiedByUser, message: message });
       }
-    } else {
-      res.status(400).send({ success: success, message: msg });
     }
-  });
-}
-
-function checkVerification(
-  verification: VerificationString,
-  callback: (success: boolean, msg: string, userID?: UserRowID) => void
-): void {
-  User.findOne({
-    where: {
-      verification: decodeURIComponent(verification),
-    },
-  }).then((user) => {
-    if (user) {
-      callback(true, "User verified", user.id);
-    } else {
-      callback(false, "No such verification");
-    }
-  });
+  );
 }

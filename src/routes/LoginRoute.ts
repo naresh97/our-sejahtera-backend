@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { addContact, createUser } from "../db/utils";
 import { TelegramID, UserRowID } from "../types";
 import { User } from "../db/models/User";
+import { getUserByTelegramID } from "../db/models/User.helper";
 
 type TelegramLoginResponse = {
   id: TelegramID;
@@ -17,37 +18,37 @@ interface LoginRequest extends Request {
 
 export function LoginRoute(req: LoginRequest, res: Response) {
   const telegramResponse = req.body.telegramResponse;
-  authUser(telegramResponse, (authObject) => {
-    if (authObject) {
+  authUser(telegramResponse, (authorized) => {
+    if (authorized) {
       // User is already logged in
-      if (req.session.user == telegramResponse.id) {
-        res.send(authObject);
+      if (req.session.userTelegramID == telegramResponse.id) {
+        res.send(authorized);
         return;
       }
-      const verified = req.session.verified;
-      const verifiedBy = req.session.verifiedBy;
+      const verified = req.session.isVerified;
+      const verifiedBy = req.session.verifiedByTelegramID;
       req.session.regenerate(() => {
-        req.session.user = telegramResponse.id;
+        req.session.userTelegramID = telegramResponse.id;
         if (verified) {
-          addContact(telegramResponse.id, verifiedBy, (contactSuccess) => {
+          addContact(telegramResponse.id, verifiedBy, (success) => {
             res.send({
-              authorized: authObject.authorized,
-              contactSuccess: contactSuccess,
+              authorized: authorized,
+              contactSuccess: success,
             });
           });
         } else {
-          res.send(authObject);
+          res.send(authorized);
         }
       });
     } else {
-      res.status(401).send(authObject);
+      res.status(401).send(authorized);
     }
   });
 }
 
 function authUser(
   telegramResponse: TelegramLoginResponse,
-  callback: (callbackObject: { authorized: boolean }) => void
+  callback: (authorized: boolean, message?: string) => void
 ): void {
   let dataCheckArray = [];
 
@@ -70,20 +71,17 @@ function authUser(
   const authorized = confirmationHash == telegramResponse.hash;
 
   if (!authorized) {
-    callback({ authorized: false });
+    callback(false);
+    return;
   }
 
-  User.findOne({
-    where: {
-      telegram: telegramResponse.id,
-    },
-  }).then((user) => {
-    if (!user) {
-      createUser(telegramResponse.id, (success) => {
-        callback({ authorized: success });
-      });
+  getUserByTelegramID(telegramResponse.id, (user) => {
+    if (!!user) {
+      callback(true);
     } else {
-      callback({ authorized: true });
+      createUser(telegramResponse.id, (success, message) => {
+        callback(success, message);
+      });
     }
   });
 }
