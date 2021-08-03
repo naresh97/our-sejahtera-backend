@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Op } from "sequelize/types";
+import { Op } from "sequelize";
 import { Contact, TelegramID, User } from "../db/db";
 import { strings_en } from "../strings";
 import { sendTelegramMessage } from "../telegram";
