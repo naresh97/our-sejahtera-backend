@@ -22,7 +22,7 @@ export function LoginRoute(req: LoginRequest, res: Response) {
     if (authorized) {
       // User is already logged in
       if (req.session.userTelegramID == telegramResponse.id) {
-        res.send(authorized);
+        res.send({authorized: authorized});
         return;
       }
       const verified = req.session.isVerified;
@@ -37,7 +37,7 @@ export function LoginRoute(req: LoginRequest, res: Response) {
             });
           });
         } else {
-          res.send(authorized);
+          res.send({authorized: authorized});
         }
       });
     } else {
