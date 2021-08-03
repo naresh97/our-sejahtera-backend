@@ -1,6 +1,8 @@
 import { strings_en } from "../strings";
 import { sendTelegramMessage } from "../telegram";
-import { User, Contact, TelegramID, UserRowID } from "./db";
+import { TelegramID, UserRowID } from "../types";
+import { Contact } from "./models/Contact";
+import { User } from "./models/User";
 
 export function addContact(
   userATelegram: TelegramID,
@@ -19,10 +21,7 @@ export function addContact(
           console.log(
             `Registering contact between ${userA!.id} and ${userBRowID}`
           );
-          sendTelegramMessage(
-            userB!.telegram,
-            strings_en.telegram_qr_scanned,
-          );
+          sendTelegramMessage(userB!.telegram, strings_en.telegram_qr_scanned);
           done(true, "Successfully added contact");
         })
         .catch((e) => {

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
-import { User, UserRowID, VerificationString } from "../db/db";
+import { User } from "../db/models/User";
 import { addContact } from "../db/utils";
+import { UserRowID, VerificationString } from "../types";
 
 interface VerifyRequest extends Request {
   body: {

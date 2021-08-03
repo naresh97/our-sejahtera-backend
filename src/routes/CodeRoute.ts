@@ -1,13 +1,8 @@
 import { Request, Response } from "express";
-import { TelegramID, User, UserInstance } from "../db/db";
 import bcrypt from "bcrypt";
 import QRCode, { QRCodeToDataURLOptions } from "qrcode";
-
-declare module "express-session" {
-  interface Session {
-    user: TelegramID;
-  }
-}
+import { TelegramID } from "../types";
+import { User, UserInstance } from "../db/models/User";
 
 export function CodeRoute(req: Request, res: Response) {
   if (!req.session.user) {

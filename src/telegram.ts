@@ -1,5 +1,5 @@
 import axios from "axios";
-import { TelegramID } from "./db/db";
+import { TelegramID } from "./types";
 
 export function setTelegramWebHook(
   callback: (success: boolean) => void = () => {}

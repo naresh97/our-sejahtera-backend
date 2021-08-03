@@ -1,14 +1,8 @@
 import { Request, Response } from "express";
-import { TelegramID, User, UserRowID } from "../db/db";
 import crypto from "crypto";
 import { addContact, createUser } from "../db/utils";
-
-declare module "express-session" {
-  interface Session {
-    verified: boolean;
-    verifiedBy: UserRowID;
-  }
-}
+import { TelegramID, UserRowID } from "../types";
+import { User } from "../db/models/User";
 
 type TelegramLoginResponse = {
   id: TelegramID;
