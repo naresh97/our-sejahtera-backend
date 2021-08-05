@@ -8,6 +8,7 @@ const { CodeRoute } = require("./routes/CodeRoute");
 const { VerifyRoute } = require("./routes/VerifyRoute");
 const { corsOpts, sessionOpts } = require("./session");
 const { TelegramWebhookRoute } = require("./routes/TelegramWebhookRoute");
+const { CovidRoute } = require("./routes/CovidRoute");
 
 console.log(`Node Environment: ${process.env.NODE_ENV}`);
 
@@ -21,6 +22,7 @@ app.post(`/${process.env.TELEGRAM_SECRET}`, TelegramWebhookRoute);
 app.post("/login", LoginRoute);
 app.get("/code", CodeRoute);
 app.post("/verify", VerifyRoute);
+app.post("/covid", CovidRoute);
 
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
