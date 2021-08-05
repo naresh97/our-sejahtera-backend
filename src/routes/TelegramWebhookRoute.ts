@@ -19,13 +19,13 @@ interface TelegramWebhookRequest extends Request {
   };
 }
 
-export function TelegramWebhookRoute(
+export async function TelegramWebhookRoute(
   req: TelegramWebhookRequest,
   res: Response
 ) {
   try {
     if (req.body.message.connected_website) {
-      sendTelegramMessage(
+      await sendTelegramMessage(
         req.body.message.from.id,
         "Thanks for using OurSejahtera! Let's stay safer together <3"
       );
@@ -33,67 +33,46 @@ export function TelegramWebhookRoute(
       const messageText = req.body.message.text;
       const telegramID = req.body.message.from.id;
       if (messageText.toLowerCase() == "/covidpositive") {
-        userInfected(telegramID, (success) => {
-          if (success) {
-            sendTelegramMessage(
-              telegramID,
-              strings_en.telegram_inform_positive
-            );
-            informContacts(telegramID);
-          } else {
-            sendTelegramMessage(telegramID, "Sorry, something went wrong.");
-          }
-        });
+        await userInfected(telegramID);
+        await sendTelegramMessage(
+          telegramID,
+          strings_en.telegram_inform_positive
+        );
+        await informContacts(telegramID);
       }
     }
   } catch (e) {
-    console.log("Could not get Telegram Message");
+    console.log(
+      e instanceof Error ? e.message : "Could not get Telegram Message"
+    );
   }
 
   res.send();
 }
 
-function informContacts(telegramID: TelegramID) {
-  getUserByTelegramID(telegramID, (user) => {
-    if (user) {
-      Contact.findAll({
-        where: {
-          [Op.or]: [{ user: user.id }, { with: user.id }],
-        },
-      }).then((result) => {
-        result.forEach((contact) => {
-          const otherPersonID =
-            contact.user == user.id ? contact.with : contact.user;
-          getUserByRowID(otherPersonID, (otherUser) => {
-            otherUser &&
-              sendTelegramMessage(
-                otherUser.telegram,
-                strings_en.telegram_inform_infect
-              );
-          });
-        });
-      });
-    }
+async function informContacts(telegramID: TelegramID): Promise<void> {
+  const user = await getUserByTelegramID(telegramID);
+  if (!user) throw new Error("User not found");
+  const contacts = await Contact.findAll({
+    where: {
+      [Op.or]: [{ user: user.id }, { with: user.id }],
+    },
+  });
+
+  contacts.forEach(async (contact) => {
+    const otherPersonID = contact.user == user.id ? contact.with : contact.user;
+    const otherUser = await getUserByRowID(otherPersonID);
+    if (!otherUser) throw new Error("Other user does not exist");
+    await sendTelegramMessage(
+      otherUser.telegram,
+      strings_en.telegram_inform_infect
+    );
   });
 }
 
-function userInfected(
-  telegramID: TelegramID,
-  callback: (success: boolean) => void
-): void {
-  getUserByTelegramID(telegramID, (user) => {
-    if (!!user) {
-      user.isInfected = true;
-      user
-        .save()
-        .then((result) => {
-          callback(!!result);
-        })
-        .catch(() => {
-          callback(false);
-        });
-    } else {
-      callback(false);
-    }
-  });
+async function userInfected(telegramID: TelegramID): Promise<void> {
+  const user = await getUserByTelegramID(telegramID);
+  if (!user) throw new Error("User not found");
+  user.isInfected = true;
+  await user.save();
 }

@@ -1,26 +1,33 @@
 import { Request, Response } from "express";
-import { getUserCovidPositivity, setUserCovidPositivity } from "../db/models/User.helper";
+import {
+  getUserCovidPositivity,
+  setUserCovidPositivity,
+} from "../db/models/User.helper";
 
 interface CovidRouteRequest extends Request {
-    body:{
-        setPositive: boolean;
-    }
+  body: {
+    setPositive: boolean;
+  };
 }
 
-export function CovidRoute(req: CovidRouteRequest, res:Response){
-    if(!req.session.userTelegramID){
-        res.status(401).send("Not logged in");
-        return;
+export async function CovidRoute(req: CovidRouteRequest, res: Response) {
+  if (!req.session.userTelegramID) {
+    res.status(401).send("Not logged in");
+    return;
+  }
+  try {
+    if (req.body.setPositive) {
+      await setUserCovidPositivity(req.session.userTelegramID, true);
+      res.send({ covidPositive: true });
+    } else {
+      const isInfected = await getUserCovidPositivity(
+        req.session.userTelegramID
+      );
+      res.send({ covidPositive: isInfected });
     }
-
-    if(req.body.setPositive){
-        setUserCovidPositivity(req.session.userTelegramID, true, success=>{
-            res.send({covidPositive: true});
-        });
-    }else{
-        getUserCovidPositivity(req.session.userTelegramID, isInfected=>{
-            res.send({covidPositive: isInfected});
-        });
-    }
+  } catch (error) {
+    res
+      .send(500)
+      .send({ error: error instanceof Error ? error.message : "Error" });
+  }
 }
-

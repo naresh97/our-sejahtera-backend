@@ -1,80 +1,60 @@
 import { TelegramID, UserRowID, VerificationString } from "../../types";
 import { User, UserInstance } from "./User";
 
-export function getUserByTelegramID(
-  telegramID: TelegramID,
-  callback: (user?: UserInstance, message?: string) => void
-): void {
-  User.findOne({
+export async function getUserByTelegramID(
+  telegramID: TelegramID
+): Promise<UserInstance | null> {
+  const user = await User.findOne({
     where: {
       telegram: telegramID,
     },
-  })
-    .then((result) => {
-      callback(!!result ? result : undefined);
-    })
-    .catch(() => {
-      callback(undefined);
-    });
+  });
+  return user;
 }
 
-export function getUserByRowID(
-  rowID: UserRowID,
-  callback: (user?: UserInstance, message?: string) => void
-): void {
-  User.findOne({
+export async function getUserByRowID(
+  rowID: UserRowID
+): Promise<UserInstance | null> {
+  const user = await User.findOne({
     where: {
       id: rowID,
     },
-  })
-    .then((result) => {
-      callback(!!result ? result : undefined);
-    })
-    .catch(() => {
-      callback(undefined);
-    });
+  });
+  return user;
 }
 
-export function getUserByVerification(
-  verification: VerificationString,
-  callback: (user?: UserInstance, message?: string) => void
-): void {
-  User.findOne({
+export async function getUserByVerification(
+  verification: VerificationString
+): Promise<UserInstance | null> {
+  const user = await User.findOne({
     where: {
       verification: verification,
     },
-  })
-    .then((result) => {
-      callback(!!result ? result : undefined);
-    })
-    .catch(() => {
-      callback(undefined);
-    });
+  });
+  return user;
 }
 
-export function getUserCovidPositivity(telegramID: TelegramID, callback: (isInfected?: boolean) => void): void {
-  getUserByTelegramID(telegramID, user => {
-    if (!!user) {
-      const infectionDuration = +user.infectionDate - Date.now();
-      if (infectionDuration > 60 * 60 * 24 * 14) {
-        setUserCovidPositivity(telegramID, false, success => {
-          callback(success ? false : undefined);
-        });
-      } else {
-        callback(user.isInfected);
-      }
-    } else {
-      callback();
-    }
-  });
+export async function getUserCovidPositivity(
+  telegramID: TelegramID
+): Promise<boolean> {
+  const user = await getUserByTelegramID(telegramID);
+  if (!user) throw new Error("User not found");
+  const infectionDuration = +user.infectionDate - Date.now();
+  if (infectionDuration > 60 * 60 * 24 * 14) {
+    await setUserCovidPositivity(telegramID, false);
+    return false;
+  } else {
+    return user.isInfected;
+  }
 }
 
-export function setUserCovidPositivity(telegramID: TelegramID, infectionState: boolean, callback: (success: boolean) => void): void {
-  getUserByTelegramID(telegramID, user => {
-    if (!!user) {
-      user.isInfected = infectionState;
-      user.infectionDate = new Date();
-      user.save().then(() => callback(true)).catch(() => callback(false));
-    } else { callback(false) }
-  });
+export async function setUserCovidPositivity(
+  telegramID: TelegramID,
+  infectionState: boolean
+): Promise<void> {
+  const user = await getUserByTelegramID(telegramID);
+  if (!user) throw new Error("User not found");
+  user.isInfected = infectionState;
+  user.infectionDate = new Date();
+  if (!(await user.save())) throw new Error("Could not save user state");
 }

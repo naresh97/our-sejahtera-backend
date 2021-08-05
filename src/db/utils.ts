@@ -1,56 +1,30 @@
 import { strings_en } from "../strings";
 import { sendTelegramMessage } from "../telegram";
-import { TelegramID, UserRowID } from "../types";
+import { TelegramID } from "../types";
 import { Contact } from "./models/Contact";
-import { User } from "./models/User";
-import { getUserByRowID, getUserByTelegramID } from "./models/User.helper";
+import { User, UserInstance } from "./models/User";
+import { getUserByTelegramID } from "./models/User.helper";
 
-export function addContact(
+export async function addContact(
   userATelegram: TelegramID,
-  userBTelegram: TelegramID,
-  callback: (success: boolean, message?: string) => void
-): void {
-  getUserByTelegramID(userATelegram, (userA) => {
-    getUserByTelegramID(userBTelegram, (userB) => {
-      if (!userA || !userB) {
-        callback(false, "Could not find user.");
-        return;
-      }
+  userBTelegram: TelegramID
+): Promise<void> {
+  const userA = await getUserByTelegramID(userATelegram);
+  const userB = await getUserByTelegramID(userBTelegram);
 
-      Contact.create({ user: userA.id, with: userB.id })
-        .then(() => {
-          console.log(
-            `Registering contact between ${userA.id} and ${userB.id}`
-          );
-          sendTelegramMessage(userB.telegram, strings_en.telegram_qr_scanned);
-          callback(true, "Successfully added contact");
-        })
-        .catch((e) => {
-          callback(false, e);
-        });
-    });
-  });
+  if (!userA || !userB) {
+    throw new Error("Could not found users");
+  }
+
+  await Contact.create({ user: userA.id, with: userB.id });
+  await sendTelegramMessage(userB.telegram, strings_en.telegram_qr_scanned);
 }
 
-export function createUser(
-  telegram: TelegramID,
-  callback: (success: boolean, message: string) => void
-): void {
-  User.create({
+export async function createUser(
+  telegram: TelegramID
+): Promise<UserInstance | null> {
+  const user = await User.create({
     telegram: telegram,
-  })
-    .then((user) => {
-      if (!user) {
-        callback(false, "Could not create user");
-      } else {
-        callback(true, "Success");
-      }
-    })
-    .catch((reason) => {
-      if (reason.name == "SequelizeUniqueConstraintError") {
-        callback(false, "User already exists");
-      } else {
-        callback(false, "Unknown error");
-      }
-    });
+  });
+  return user;
 }
