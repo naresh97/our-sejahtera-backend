@@ -1,4 +1,4 @@
-const strings_en = {
+export const strings_en = {
   telegram_inform_infect:
     "ATTENTION! Someone you have been \
 in contact with has reported being tested POSITIVE with \
@@ -15,5 +15,3 @@ local COVID19 guidelines.",
 be notified if they report being tested positive with COVID19. If \
 you are tested positive, please tell me /COVIDPOSITIVE",
 };
-
-exports.strings_en = strings_en;
