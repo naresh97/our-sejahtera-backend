@@ -1,6 +1,9 @@
-const { default: axios } = require("axios");
+import axios from "axios";
+import { TelegramID } from "./types";
 
-function setTelegramWebHook(done) {
+export function setTelegramWebHook(
+  callback: (success: boolean) => void = () => {}
+): void {
   const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/setWebhook`;
   axios
     .post(url, {
@@ -9,14 +12,18 @@ function setTelegramWebHook(done) {
       drop_pending_updates: true,
     })
     .then((res) => {
-      done(res);
+      callback(!!res);
     })
     .catch((err) => {
-      done(err);
+      callback(!!err);
     });
 }
 
-function sendTelegramMessage(telegramID, message, done = () => {}) {
+export function sendTelegramMessage(
+  telegramID: TelegramID,
+  message: string,
+  callback: (success: boolean) => void = () => {}
+): void {
   const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`;
   axios
     .post(url, {
@@ -24,15 +31,12 @@ function sendTelegramMessage(telegramID, message, done = () => {}) {
       text: message,
     })
     .then((res) => {
-      done(res);
+      callback(!!res);
     })
     .catch((err) => {
       console.error("Problem sending Telegram message.");
-      done(err);
+      callback(!!err);
     });
 }
 
-setTelegramWebHook(() => {});
-
-exports.sendTelegramMessage = sendTelegramMessage;
-exports.setTelegramWebHook = setTelegramWebHook;
+setTelegramWebHook();
