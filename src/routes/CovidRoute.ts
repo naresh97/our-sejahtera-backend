@@ -19,7 +19,7 @@ export function CovidRoute(req: CovidRouteRequest, res:Response){
         });
     }else{
         getUserCovidPositivity(req.session.userTelegramID, isInfected=>{
-            res.status(isInfected ? 200 : 400).send({covidPositive: isInfected});
+            res.send({covidPositive: isInfected});
         });
     }
 }

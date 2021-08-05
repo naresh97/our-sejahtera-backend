@@ -32,6 +32,7 @@ export const User = sequelize.define<UserInstance>("User", {
   },
   isInfected: {
     type: DataTypes.BOOLEAN,
+    defaultValue: false,
   },
   infectionDate: {
     type: DataTypes.DATE,
