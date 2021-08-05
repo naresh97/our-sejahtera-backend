@@ -22,6 +22,7 @@ app.post(`/${process.env.TELEGRAM_SECRET}`, TelegramWebhookRoute);
 app.post("/login", LoginRoute);
 app.get("/code", CodeRoute);
 app.post("/verify", VerifyRoute);
+app.post("/covid", CovidRoute);
 
 const port = process.env.PORT || 8080;
 app.listen(port, () => {

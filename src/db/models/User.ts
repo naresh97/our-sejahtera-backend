@@ -7,6 +7,7 @@ interface UserAttributes {
   telegram: TelegramID;
   verification: VerificationString;
   isInfected: boolean;
+  infectionDate: Date;
 }
 interface UserCreationAttributes {
   telegram: TelegramID;
@@ -31,6 +32,9 @@ export const User = sequelize.define<UserInstance>("User", {
   },
   isInfected: {
     type: DataTypes.BOOLEAN,
+  },
+  infectionDate: {
+    type: DataTypes.DATE,
   },
 });
 
