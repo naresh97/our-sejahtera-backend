@@ -16,40 +16,44 @@ interface LoginRequest extends Request {
   };
 }
 
-export function LoginRoute(req: LoginRequest, res: Response) {
+export async function LoginRoute(req: LoginRequest, res: Response) {
   const telegramResponse = req.body.telegramResponse;
-  authUser(telegramResponse, (authorized) => {
+  try {
+    const authorized = await authUser(telegramResponse);
     if (authorized) {
       // User is already logged in
       if (req.session.userTelegramID == telegramResponse.id) {
-        res.send({authorized: authorized});
+        res.send({ authorized: authorized });
         return;
       }
+      // User not logged in
       const verified = req.session.isVerified;
       const verifiedBy = req.session.verifiedByTelegramID;
-      req.session.regenerate(() => {
+      req.session.regenerate(async () => {
         req.session.userTelegramID = telegramResponse.id;
         if (verified) {
-          addContact(telegramResponse.id, verifiedBy, (success) => {
-            res.send({
-              authorized: authorized,
-              contactSuccess: success,
-            });
+          await addContact(telegramResponse.id, verifiedBy);
+          res.send({
+            authorized: true,
+            contactSuccess: true,
           });
         } else {
-          res.send({authorized: authorized});
+          res.send({ authorized: authorized });
         }
       });
     } else {
-      res.status(401).send(authorized);
+      res.status(401).send({ error: "Unauthorized" });
     }
-  });
+  } catch (error) {
+    res
+      .status(500)
+      .send({ error: error instanceof Error ? error.message : "Error" });
+  }
 }
 
-function authUser(
-  telegramResponse: TelegramLoginResponse,
-  callback: (authorized: boolean, message?: string) => void
-): void {
+async function authUser(
+  telegramResponse: TelegramLoginResponse
+): Promise<boolean> {
   let dataCheckArray = [];
 
   for (const [key, value] of Object.entries(telegramResponse)) {
@@ -71,17 +75,13 @@ function authUser(
   const authorized = confirmationHash == telegramResponse.hash;
 
   if (!authorized) {
-    callback(false);
-    return;
+    return false;
   }
 
-  getUserByTelegramID(telegramResponse.id, (user) => {
-    if (!!user) {
-      callback(true);
-    } else {
-      createUser(telegramResponse.id, (success, message) => {
-        callback(success, message);
-      });
-    }
-  });
+  const user = await getUserByTelegramID(telegramResponse.id);
+  if (!!user) {
+    return true;
+  } else {
+    return !!(await createUser(telegramResponse.id));
+  }
 }
