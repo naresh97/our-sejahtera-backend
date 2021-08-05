@@ -51,3 +51,30 @@ export function getUserByVerification(
       callback(undefined);
     });
 }
+
+export function getUserCovidPositivity(telegramID: TelegramID, callback: (isInfected?: boolean) => void): void {
+  getUserByTelegramID(telegramID, user => {
+    if (!!user) {
+      const infectionDuration = +user.infectionDate - Date.now();
+      if (infectionDuration > 60 * 60 * 24 * 14) {
+        setUserCovidPositivity(telegramID, false, success => {
+          callback(success ? false : undefined);
+        });
+      } else {
+        callback(user.isInfected);
+      }
+    } else {
+      callback();
+    }
+  });
+}
+
+export function setUserCovidPositivity(telegramID: TelegramID, infectionState: boolean, callback: (success: boolean) => void): void {
+  getUserByTelegramID(telegramID, user => {
+    if (!!user) {
+      user.isInfected = infectionState;
+      user.infectionDate = new Date();
+      user.save().then(() => callback(true)).catch(() => callback(false));
+    } else { callback(false) }
+  });
+}

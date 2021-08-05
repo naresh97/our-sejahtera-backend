@@ -9,6 +9,7 @@ import { TelegramWebhookRoute } from "./routes/TelegramWebhookRoute";
 import { LoginRoute } from "./routes/LoginRoute";
 import { CodeRoute } from "./routes/CodeRoute";
 import { VerifyRoute } from "./routes/VerifyRoute";
+import { CovidRoute } from "./routes/CovidRoute";
 
 console.log(`Node Environment: ${process.env.NODE_ENV}`);
 
