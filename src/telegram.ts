@@ -21,4 +21,10 @@ export async function sendTelegramMessage(
   });
 }
 
-setTelegramWebHook();
+
+setTelegramWebHook()
+.catch(error=>{
+  console.error("Error setting Telegram Webhook");
+  error instanceof Error && console.error(error.message);
+});
+
