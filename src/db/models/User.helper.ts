@@ -55,8 +55,8 @@ export function getUserByVerification(
 export function getUserCovidPositivity(telegramID: TelegramID, callback: (isInfected?: boolean) => void): void {
   getUserByTelegramID(telegramID, user => {
     if (!!user) {
-      const infectionDuration = +user.infectionDate - Date.now();
-      if (infectionDuration > 60 * 60 * 24 * 14) {
+      const infectionDuration = Date.now() - +user.infectionDate;
+      if (infectionDuration > 60 * 60 * 24 * 14 * 1000) {
         setUserCovidPositivity(telegramID, false, success => {
           callback(success ? false : undefined);
         });
