@@ -27,7 +27,7 @@ export async function CovidRoute(req: CovidRouteRequest, res: Response) {
     }
   } catch (error) {
     res
-      .send(500)
+      .status(500)
       .send({ error: error instanceof Error ? error.message : "Error" });
   }
 }

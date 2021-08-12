@@ -39,6 +39,7 @@ export async function getUserCovidPositivity(
 ): Promise<boolean> {
   const user = await getUserByTelegramID(telegramID);
   if (!user) throw new Error("User not found");
+  if (!user.infectionDate) return false;
   const infectionDuration = new Date().getTime() - user.infectionDate.getTime();
   if (infectionDuration > 60 * 60 * 24 * 14 * 1000) {
     await setUserCovidPositivity(telegramID, false);
