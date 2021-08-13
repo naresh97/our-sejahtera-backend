@@ -5,6 +5,8 @@ import { sequelize } from "../db";
 interface ContactAttributes {
   user: UserRowID;
   with: UserRowID;
+  createdAt?: Date;
+  id?: Number;
 }
 export interface ContactInterface
   extends Model<ContactAttributes, ContactAttributes>,

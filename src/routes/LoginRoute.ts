@@ -1,9 +1,8 @@
-import { Request, Response } from "express";
 import crypto from "crypto";
-import { addContact, createUser } from "../db/utils";
-import { TelegramID, UserRowID } from "../types";
-import { User } from "../db/models/User";
-import { getUserByTelegramID } from "../db/models/User.helper";
+import { Request, Response } from "express";
+import { addContact } from "../db/models/Contact.helper";
+import { createUser, getUserByTelegramID } from "../db/models/User.helper";
+import { TelegramID } from "../types";
 
 type TelegramLoginResponse = {
   id: TelegramID;

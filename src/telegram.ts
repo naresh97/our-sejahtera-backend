@@ -45,10 +45,7 @@ export async function informContacts(telegramID: TelegramID): Promise<void> {
   });
 }
 
-
-setTelegramWebHook()
-.catch(error=>{
+setTelegramWebHook().catch((error) => {
   console.error("Error setting Telegram Webhook");
   error instanceof Error && console.error(error.message);
 });
-

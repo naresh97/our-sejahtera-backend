@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
-import { User } from "../db/models/User";
+import { addContact } from "../db/models/Contact.helper";
 import { getUserByVerification } from "../db/models/User.helper";
-import { addContact } from "../db/utils";
-import { UserRowID, VerificationString } from "../types";
+import { VerificationString } from "../types";
 
 interface VerifyRequest extends Request {
   body: {
@@ -14,7 +13,7 @@ export async function VerifyRoute(req: VerifyRequest, res: Response) {
   const verifiedByUser = await getUserByVerification(
     decodeURIComponent(req.body.id) as VerificationString
   );
-  try{
+  try {
     if (!!verifiedByUser) {
       req.session.isVerified = !!verifiedByUser;
       req.session.verifiedByTelegramID = verifiedByUser.telegram;
@@ -32,7 +31,7 @@ export async function VerifyRoute(req: VerifyRequest, res: Response) {
     } else {
       res.status(400).send({ success: false });
     }
-  }catch(e){
-    res.status(500).send({error: e instanceof Error ? e.message : "Error"});
+  } catch (e) {
+    res.status(500).send({ error: e instanceof Error ? e.message : "Error" });
   }
 }
