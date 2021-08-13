@@ -1,9 +1,9 @@
-import { Request, Response } from "express";
 import bcrypt from "bcrypt";
+import { Request, Response } from "express";
 import QRCode, { QRCodeToDataURLOptions } from "qrcode";
-import { TelegramID, VerificationString } from "../types";
-import { User, UserInstance } from "../db/models/User";
+import { UserInstance } from "../db/models/User";
 import { getUserByTelegramID } from "../db/models/User.helper";
+import { TelegramID, VerificationString } from "../types";
 
 export async function CodeRoute(req: Request, res: Response) {
   if (!req.session.userTelegramID) {

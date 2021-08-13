@@ -1,6 +1,15 @@
 import { TelegramID, UserRowID, VerificationString } from "../../types";
 import { User, UserInstance } from "./User";
 
+export async function createUser(
+  telegram: TelegramID
+): Promise<UserInstance | null> {
+  const user = await User.create({
+    telegram: telegram,
+  });
+  return user;
+}
+
 export async function getUserByTelegramID(
   telegramID: TelegramID
 ): Promise<UserInstance | null> {
