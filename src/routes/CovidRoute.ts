@@ -3,6 +3,7 @@ import {
   getUserCovidPositivity,
   setUserCovidPositivity,
 } from "../db/models/User.helper";
+import { informContacts } from "../telegram";
 
 interface CovidRouteRequest extends Request {
   body: {
@@ -18,6 +19,7 @@ export async function CovidRoute(req: CovidRouteRequest, res: Response) {
   try {
     if (req.body.setPositive) {
       await setUserCovidPositivity(req.session.userTelegramID, true);
+      await informContacts(req.session.userTelegramID);
       res.send({ covidPositive: true });
     } else {
       const isInfected = await getUserCovidPositivity(
