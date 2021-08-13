@@ -19,7 +19,7 @@ export async function purgeOldContacts(telegramID: TelegramID): Promise<void> {
     if (!contact.createdAt)
       throw new Error("Creation time not set for contact.");
     const contactAge = currentTime - contact.createdAt.getTime();
-    if (contactAge > 60 * 60 * 24 * 14 * 10000) {
+    if (contactAge > 60 * 60 * 24 * 14 * 1000) {
       oldContacts.push(contact);
     }
   });
